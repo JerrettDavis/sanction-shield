@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import Link from "next/link";
 
@@ -9,9 +9,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  const supabase = getSupabaseBrowser();
-  const isLocalDev = !supabase;
+  useEffect(() => { setMounted(true); }, []);
+
+  const supabase = mounted ? getSupabaseBrowser() : null;
+  const isLocalDev = mounted && !supabase;
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -31,9 +34,18 @@ export default function LoginPage() {
       return;
     }
 
-    // Full page navigation — middleware needs to see the auth cookies
-    // in a fresh server request, not a client-side route push
     window.location.href = "/screen";
+  }
+
+  // Show loading state until client mounts (prevents hydration mismatch)
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center">
+          <span className="text-white font-bold text-lg">SS</span>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -75,6 +87,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
+                autoComplete="email"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                 placeholder="you@company.com"
               />
@@ -88,6 +101,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
+                autoComplete="current-password"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                 placeholder="Your password"
               />
