@@ -39,11 +39,6 @@ const BAND_COLORS: Record<ConfidenceBand, string> = {
   LOW: "bg-blue-100 text-blue-800 border-blue-200",
 };
 
-const BAND_LABELS: Record<ConfidenceBand, string> = {
-  HIGH: "High Confidence Match",
-  REVIEW: "Requires Review",
-  LOW: "Low Confidence",
-};
 
 export default function ScreenPage() {
   const [name, setName] = useState("");

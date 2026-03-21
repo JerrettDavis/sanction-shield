@@ -44,7 +44,6 @@ export async function processBatch(params: {
       });
 
       const normalized = normalizeName(row.name.trim());
-      const topMatch = matches[0];
 
       // Create screening request linked to batch
       const requestId = await db.insertScreeningRequest({

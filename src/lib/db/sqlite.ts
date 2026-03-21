@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
+import fs from "fs";
 import path from "path";
-import { randomUUID } from "crypto";
+import { randomUUID, createHash as cryptoCreateHash } from "crypto";
 import type { DbAdapter, SanctionsEntryRow, SearchResult } from "./adapter";
 
 const DB_PATH = path.join(process.cwd(), "data", "sanctionshield.db");
@@ -10,7 +11,6 @@ let _db: Database.Database | null = null;
 function getDb(): Database.Database {
   if (!_db) {
     // Ensure data directory exists
-    const fs = require("fs");
     const dir = path.dirname(DB_PATH);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
@@ -114,8 +114,7 @@ export class SqliteAdapter implements DbAdapter {
       db.prepare("INSERT INTO organizations (id, name) VALUES (?, ?)").run(orgId, "Local Dev Org");
 
       // Create a well-known dev API key: sk_test_localdevelopment
-      const crypto = require("crypto");
-      const devKeyHash = crypto.createHash("sha256").update("sk_test_localdevelopment").digest("hex");
+      const devKeyHash = cryptoCreateHash("sha256").update("sk_test_localdevelopment").digest("hex");
       db.prepare("INSERT INTO api_keys (id, org_id, name, key_prefix, key_hash) VALUES (?, ?, ?, ?, ?)")
         .run(randomUUID(), orgId, "Local Dev Key", "sk_test_", devKeyHash);
 

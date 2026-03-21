@@ -1,4 +1,3 @@
-import { normalizeName } from "@/lib/matching/normalize";
 import type { SanctionsEntry, EntityType } from "./types";
 
 const OFAC_SDN_CSV_URL = "https://www.treasury.gov/ofac/downloads/sdn.csv";

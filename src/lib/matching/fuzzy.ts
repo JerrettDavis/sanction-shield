@@ -1,5 +1,5 @@
 import { getDb } from "@/lib/db";
-import { calculateConfidence, type ConfidenceResult } from "./scorer";
+import { calculateConfidence } from "./scorer";
 import { normalizeName } from "./normalize";
 import type { EntityType, SanctionsSource, ScreeningMatch } from "@/lib/sanctions/types";
 
