@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { DbAdapter, SanctionsEntryRow, SearchResult } from "./adapter";
+// DbAdapter type needed for return type reference in getBatchJob
 
 /**
  * Production adapter using Supabase PostgreSQL.
@@ -155,5 +156,56 @@ export class SupabaseAdapter implements DbAdapter {
       .single();
     if (error || !data) throw new Error(`Create org failed: ${error?.message}`);
     return data.id;
+  }
+
+  async createBatchJob(params: { orgId: string; userId?: string; totalNames: number; threshold: number }): Promise<string> {
+    const { data, error } = await this.client
+      .from("batch_jobs")
+      .insert({ org_id: params.orgId, user_id: params.userId || null, total_names: params.totalNames, threshold: params.threshold })
+      .select("id")
+      .single();
+    if (error || !data) throw new Error(`Create batch failed: ${error?.message}`);
+    return data.id;
+  }
+
+  async updateBatchJob(id: string, update: { status?: string; processed?: number; matchesFound?: number; completedAt?: string }): Promise<void> {
+    const updateObj: Record<string, unknown> = {};
+    if (update.status !== undefined) updateObj.status = update.status;
+    if (update.processed !== undefined) updateObj.processed = update.processed;
+    if (update.matchesFound !== undefined) updateObj.matches_found = update.matchesFound;
+    if (update.completedAt !== undefined) updateObj.completed_at = update.completedAt;
+    await this.client.from("batch_jobs").update(updateObj).eq("id", id);
+  }
+
+  async getBatchJob(id: string) {
+    const { data } = await this.client.from("batch_jobs").select("*").eq("id", id).maybeSingle();
+    return data as Awaited<ReturnType<DbAdapter["getBatchJob"]>>;
+  }
+
+  async getBatchResults(batchId: string) {
+    const { data } = await this.client
+      .from("screening_requests")
+      .select("input_name, screening_results(confidence_score, match_details)")
+      .eq("batch_id", batchId)
+      .order("created_at");
+
+    return (data || []).map((row: Record<string, unknown>) => {
+      const results = row.screening_results as Array<Record<string, unknown>> || [];
+      const top = results[0];
+      const details = (top?.match_details || {}) as Record<string, unknown>;
+      const confidence = top?.confidence_score as number | null ?? null;
+      const band = confidence !== null ? (confidence >= 85 ? "HIGH" : confidence >= 60 ? "REVIEW" : "LOW") : null;
+      return {
+        input_name: row.input_name as string,
+        decision: confidence === null ? "clear" : (confidence >= 85 ? "potential_match" : confidence >= 60 ? "review" : "clear"),
+        confidence,
+        matched_name: (details.primary_name as string) || null,
+        matched_list: (details.list as string) || null,
+        matched_id: (details.sdn_id as string) || null,
+        band,
+        reason_codes: (details.reason_codes as string[]) || [],
+        programs: (details.programs as string[]) || [],
+      };
+    });
   }
 }

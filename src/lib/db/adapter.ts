@@ -110,6 +110,48 @@ export interface DbAdapter {
 
   /** Create an organization */
   createOrganization(name: string): Promise<string>;
+
+  /** Create a batch job */
+  createBatchJob(params: {
+    orgId: string;
+    userId?: string;
+    totalNames: number;
+    threshold: number;
+  }): Promise<string>;
+
+  /** Update batch job progress */
+  updateBatchJob(id: string, update: {
+    status?: string;
+    processed?: number;
+    matchesFound?: number;
+    completedAt?: string;
+  }): Promise<void>;
+
+  /** Get a batch job by ID */
+  getBatchJob(id: string): Promise<{
+    id: string;
+    org_id: string;
+    status: string;
+    total_names: number;
+    processed: number;
+    matches_found: number;
+    threshold: number;
+    created_at: string;
+    completed_at: string | null;
+  } | null>;
+
+  /** Get screening results for a batch */
+  getBatchResults(batchId: string): Promise<Array<{
+    input_name: string;
+    decision: string;
+    confidence: number | null;
+    matched_name: string | null;
+    matched_list: string | null;
+    matched_id: string | null;
+    band: string | null;
+    reason_codes: string[];
+    programs: string[];
+  }>>;
 }
 
 /** Detect which adapter to use based on environment */
