@@ -1,0 +1,8 @@
+# Default owner for all files
+* @JerrettDavis
+
+# Security-sensitive files require owner review
+src/lib/auth/ @JerrettDavis
+src/lib/db/ @JerrettDavis
+supabase/ @JerrettDavis
+SECURITY.md @JerrettDavis
