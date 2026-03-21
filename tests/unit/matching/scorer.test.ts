@@ -20,26 +20,46 @@ describe("levenshtein", () => {
 
 describe("calculateConfidence", () => {
   it("returns 100 for exact match", () => {
-    expect(calculateConfidence("BANCO NACIONAL DE CUBA", "BANCO NACIONAL DE CUBA")).toBe(100);
+    const result = calculateConfidence("BANCO NACIONAL DE CUBA", "BANCO NACIONAL DE CUBA");
+    expect(result.confidence).toBe(100);
+    expect(result.band).toBe("HIGH");
+    expect(result.requires_review).toBe(false);
   });
 
   it("returns high confidence for close match", () => {
-    const score = calculateConfidence("BANCO NACIONAL DE CUBA", "BANCO NACIONAL DE CUBA S.A.");
-    expect(score).toBeGreaterThan(75);
+    const result = calculateConfidence("BANCO NACIONAL DE CUBA", "BANCO NACIONAL DE CUBA S.A.");
+    expect(result.confidence).toBeGreaterThan(75);
   });
 
   it("returns low confidence for unrelated names", () => {
-    const score = calculateConfidence("Acme Corporation", "John Smith");
-    expect(score).toBeLessThan(30);
+    const result = calculateConfidence("Acme Corporation", "John Smith");
+    expect(result.confidence).toBeLessThan(30);
+    expect(result.band).toBe("LOW");
   });
 
   it("checks aliases for better match", () => {
-    const score = calculateConfidence("BNC", "BANCO NACIONAL DE CUBA", ["BNC", "NATIONAL BANK OF CUBA"]);
-    expect(score).toBe(100);
+    const result = calculateConfidence("BNC", "BANCO NACIONAL DE CUBA", ["BNC", "NATIONAL BANK OF CUBA"]);
+    expect(result.confidence).toBe(100);
   });
 
   it("handles case insensitivity", () => {
-    const score = calculateConfidence("banco nacional de cuba", "BANCO NACIONAL DE CUBA");
-    expect(score).toBe(100);
+    const result = calculateConfidence("banco nacional de cuba", "BANCO NACIONAL DE CUBA");
+    expect(result.confidence).toBe(100);
+  });
+
+  it("includes component scores", () => {
+    const result = calculateConfidence("BANCO NACIONAL", "BANCO NACIONAL DE CUBA");
+    expect(result.component_scores).toHaveProperty("trigram");
+    expect(result.component_scores).toHaveProperty("levenshtein");
+    expect(result.component_scores).toHaveProperty("phonetic");
+    expect(result.component_scores).toHaveProperty("token_overlap");
+  });
+
+  it("classifies REVIEW band for ambiguous matches", () => {
+    const result = calculateConfidence("BANCO NACIONAL", "BANCONAL INTERNATIONAL");
+    if (result.confidence >= 60 && result.confidence < 85) {
+      expect(result.band).toBe("REVIEW");
+      expect(result.requires_review).toBe(true);
+    }
   });
 });

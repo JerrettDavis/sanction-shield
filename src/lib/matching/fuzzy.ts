@@ -1,5 +1,5 @@
 import { createServiceClient } from "@/lib/db/client";
-import { calculateConfidence } from "./scorer";
+import { calculateConfidence, type ConfidenceResult } from "./scorer";
 import { normalizeName } from "./normalize";
 import type { EntityType, SanctionsSource, ScreeningMatch } from "@/lib/sanctions/types";
 
@@ -63,11 +63,14 @@ export async function screenName(options: ScreenOptions): Promise<ScreeningMatch
   const matches: ScreeningMatch[] = [];
 
   for (const entry of candidates as DbEntry[]) {
-    const confidence = calculateConfidence(name, entry.primary_name, entry.aliases);
+    const result = calculateConfidence(name, entry.primary_name, entry.aliases);
 
-    if (confidence >= threshold) {
+    if (result.confidence >= threshold) {
       matches.push({
-        confidence,
+        confidence: result.confidence,
+        band: result.band,
+        requires_review: result.requires_review,
+        component_scores: result.component_scores,
         list: entry.source,
         entry: {
           sdn_id: entry.external_id || entry.id,

@@ -30,51 +30,94 @@ export function levenshtein(a: string, b: string): number {
  * - Phonetic match bonus
  * - Token overlap bonus
  */
+export type ConfidenceBand = "HIGH" | "REVIEW" | "LOW";
+
+export interface ConfidenceResult {
+  confidence: number;
+  band: ConfidenceBand;
+  requires_review: boolean;
+  component_scores: {
+    trigram: number;
+    levenshtein: number;
+    phonetic: number;
+    token_overlap: number;
+  };
+}
+
+export function classifyBand(score: number): ConfidenceBand {
+  if (score >= 85) return "HIGH";
+  if (score >= 60) return "REVIEW";
+  return "LOW";
+}
+
 export function calculateConfidence(
   queryName: string,
   entryName: string,
   entryAliases: string[] = []
-): number {
+): ConfidenceResult {
   const qNorm = normalizeName(queryName);
   const eNorm = normalizeName(entryName);
 
   // Check all names (primary + aliases), take highest score
   const allNames = [eNorm, ...entryAliases.map(normalizeName)];
-  let bestScore = 0;
+  let bestResult = scorePair(qNorm, allNames[0]);
 
-  for (const candidate of allNames) {
-    const score = scorePair(qNorm, candidate);
-    if (score > bestScore) bestScore = score;
+  for (let i = 1; i < allNames.length; i++) {
+    const result = scorePair(qNorm, allNames[i]);
+    if (result.total > bestResult.total) bestResult = result;
   }
 
-  return Math.min(100, Math.round(bestScore));
+  const confidence = Math.min(100, Math.round(bestResult.total));
+  const band = classifyBand(confidence);
+
+  return {
+    confidence,
+    band,
+    requires_review: band === "REVIEW",
+    component_scores: {
+      trigram: Math.round(bestResult.trigram),
+      levenshtein: Math.round(bestResult.levenshtein),
+      phonetic: Math.round(bestResult.phonetic),
+      token_overlap: Math.round(bestResult.tokenOverlap),
+    },
+  };
 }
 
-function scorePair(query: string, candidate: string): number {
+interface PairScore {
+  total: number;
+  trigram: number;
+  levenshtein: number;
+  phonetic: number;
+  tokenOverlap: number;
+}
+
+function scorePair(query: string, candidate: string): PairScore {
   // Exact match
-  if (query === candidate) return 100;
+  if (query === candidate) return { total: 100, trigram: 40, levenshtein: 30, phonetic: 15, tokenOverlap: 15 };
 
   // Trigram similarity (weight: 40%)
-  const trigramSim = trigramSimilarity(query, candidate) * 40;
+  const trigram = trigramSimilarity(query, candidate) * 40;
 
   // Levenshtein similarity (weight: 30%)
   const maxLen = Math.max(query.length, candidate.length);
   const levDist = levenshtein(query, candidate);
-  const levSim = maxLen > 0 ? ((maxLen - levDist) / maxLen) * 30 : 0;
+  const lev = maxLen > 0 ? ((maxLen - levDist) / maxLen) * 30 : 0;
 
   // Phonetic match bonus (weight: 15%)
   const qPhon = phoneticEncode(query);
   const cPhon = phoneticEncode(candidate);
-  const phonSim = qPhon === cPhon ? 15 : (trigramSimilarity(qPhon, cPhon) * 15);
+  const phon = qPhon === cPhon ? 15 : (trigramSimilarity(qPhon, cPhon) * 15);
 
-  // Token overlap bonus (weight: 15%)
-  const qTokens = new Set(tokenizeName(query));
-  const cTokens = new Set(tokenizeName(candidate));
+  // Token overlap bonus (weight: 15%) — filter short tokens per Jarvis QA
+  const qTokens = new Set(tokenizeName(query).filter(t => t.length >= 3));
+  const cTokens = new Set(tokenizeName(candidate).filter(t => t.length >= 3));
   const intersection = [...qTokens].filter(t => cTokens.has(t)).length;
   const union = new Set([...qTokens, ...cTokens]).size;
-  const tokenSim = union > 0 ? (intersection / union) * 15 : 0;
+  // Exact token bonus: if any token matches exactly, add 5 points
+  const exactTokenBonus = intersection > 0 ? 5 : 0;
+  const tokenOvl = union > 0 ? (intersection / union) * 15 + exactTokenBonus : 0;
 
-  return trigramSim + levSim + phonSim + tokenSim;
+  return { total: trigram + lev + phon + tokenOvl, trigram, levenshtein: lev, phonetic: phon, tokenOverlap: tokenOvl };
 }
 
 /**

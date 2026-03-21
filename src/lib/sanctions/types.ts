@@ -25,6 +25,14 @@ export interface SanctionsEntry {
 
 export interface ScreeningMatch {
   confidence: number;
+  band: "HIGH" | "REVIEW" | "LOW";
+  requires_review: boolean;
+  component_scores: {
+    trigram: number;
+    levenshtein: number;
+    phonetic: number;
+    token_overlap: number;
+  };
   list: SanctionsSource;
   entry: {
     sdn_id: string;
