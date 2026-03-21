@@ -3,14 +3,12 @@
 import { useState } from "react";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const supabase = getSupabaseBrowser();
   const isLocalDev = !supabase;
@@ -18,7 +16,7 @@ export default function LoginPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     if (isLocalDev) {
-      router.push("/screen");
+      window.location.href = "/screen";
       return;
     }
 
@@ -33,8 +31,9 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/screen");
-    router.refresh();
+    // Full page navigation — middleware needs to see the auth cookies
+    // in a fresh server request, not a client-side route push
+    window.location.href = "/screen";
   }
 
   return (
@@ -52,7 +51,7 @@ export default function LoginPage() {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 text-sm text-blue-800">
             Local dev mode — no authentication required.
             <button
-              onClick={() => router.push("/screen")}
+              onClick={() => { window.location.href = "/screen"; }}
               className="block mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Enter Dashboard
