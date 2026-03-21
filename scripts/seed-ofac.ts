@@ -4,7 +4,6 @@
  */
 
 import { SqliteAdapter } from "../src/lib/db/sqlite";
-import { updateSanctionsLists } from "../src/lib/sanctions/updater";
 
 // Force the adapter module to use SQLite by setting up the getDb override
 // We import the adapter directly here since this is a standalone script

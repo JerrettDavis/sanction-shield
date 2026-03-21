@@ -6,13 +6,16 @@ let _initialized = false;
 
 /**
  * Get the database adapter. Auto-detects environment:
- * - Production (SUPABASE_URL set): Supabase PostgreSQL
+ * - Production (SUPABASE_URL set): Supabase PostgreSQL (auto-migrates on first request)
  * - Local dev (no env): SQLite in ./data/sanctionshield.db
  */
 export async function getDb(): Promise<DbAdapter> {
   if (!_adapter) {
     if (isProductionMode()) {
-      // Dynamic import to avoid loading Supabase client in local dev
+      // Run auto-migration check on first cold start
+      const { ensureMigrated } = await import("./migrate");
+      await ensureMigrated();
+
       const { SupabaseAdapter } = await import("./supabase-adapter");
       _adapter = new SupabaseAdapter();
     } else {
