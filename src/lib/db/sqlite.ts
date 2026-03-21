@@ -280,4 +280,71 @@ export class SqliteAdapter implements DbAdapter {
     db.prepare("INSERT INTO organizations (id, name) VALUES (?, ?)").run(id, name);
     return id;
   }
+
+  async createBatchJob(params: { orgId: string; userId?: string; totalNames: number; threshold: number }): Promise<string> {
+    const db = getDb();
+    const id = randomUUID();
+    db.prepare("INSERT INTO batch_jobs (id, org_id, user_id, total_names, threshold, status) VALUES (?, ?, ?, ?, ?, 'pending')")
+      .run(id, params.orgId, params.userId || null, params.totalNames, params.threshold);
+    return id;
+  }
+
+  async updateBatchJob(id: string, update: { status?: string; processed?: number; matchesFound?: number; completedAt?: string }): Promise<void> {
+    const db = getDb();
+    const sets: string[] = [];
+    const vals: (string | number)[] = [];
+    if (update.status !== undefined) { sets.push("status = ?"); vals.push(update.status); }
+    if (update.processed !== undefined) { sets.push("processed = ?"); vals.push(update.processed); }
+    if (update.matchesFound !== undefined) { sets.push("matches_found = ?"); vals.push(update.matchesFound); }
+    if (update.completedAt !== undefined) { sets.push("completed_at = ?"); vals.push(update.completedAt); }
+    if (sets.length === 0) return;
+    vals.push(id);
+    db.prepare(`UPDATE batch_jobs SET ${sets.join(", ")} WHERE id = ?`).run(...vals);
+  }
+
+  async getBatchJob(id: string) {
+    const db = getDb();
+    const row = db.prepare("SELECT * FROM batch_jobs WHERE id = ?").get(id) as Record<string, unknown> | undefined;
+    if (!row) return null;
+    return {
+      id: row.id as string,
+      org_id: row.org_id as string,
+      status: row.status as string,
+      total_names: row.total_names as number,
+      processed: row.processed as number,
+      matches_found: row.matches_found as number,
+      threshold: row.threshold as number,
+      created_at: row.created_at as string,
+      completed_at: row.completed_at as string | null,
+    };
+  }
+
+  async getBatchResults(batchId: string) {
+    const db = getDb();
+    const rows = db.prepare(`
+      SELECT sr.input_name, sr.input_name_normalized,
+             sres.confidence_score, sres.match_details
+      FROM screening_requests sr
+      LEFT JOIN screening_results sres ON sres.request_id = sr.id
+      WHERE sr.batch_id = ?
+      ORDER BY sr.created_at
+    `).all(batchId) as Array<Record<string, unknown>>;
+
+    return rows.map(row => {
+      const details = JSON.parse((row.match_details as string) || "{}");
+      const confidence = row.confidence_score as number | null;
+      const band = confidence !== null ? (confidence >= 85 ? "HIGH" : confidence >= 60 ? "REVIEW" : "LOW") : null;
+      return {
+        input_name: row.input_name as string,
+        decision: confidence === null ? "clear" : (confidence >= 85 ? "potential_match" : confidence >= 60 ? "review" : "clear"),
+        confidence,
+        matched_name: details.primary_name || null,
+        matched_list: details.list || null,
+        matched_id: details.sdn_id || null,
+        band,
+        reason_codes: details.reason_codes || [],
+        programs: details.programs || [],
+      };
+    });
+  }
 }
