@@ -22,6 +22,15 @@ export async function validateApiKey(req: NextRequest): Promise<AuthResult | Nex
   }
 
   const apiKey = authHeader.slice(7);
+
+  // Block well-known test key in production
+  if (apiKey === "sk_test_localdevelopment" && process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { error: "test_key_blocked", message: "Test API keys are not allowed in production" },
+      { status: 403 }
+    );
+  }
+
   const keyHash = createHash("sha256").update(apiKey).digest("hex");
 
   const db = await getDb();
