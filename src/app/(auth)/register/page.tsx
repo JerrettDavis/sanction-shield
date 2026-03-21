@@ -39,6 +39,7 @@ export default function RegisterPage() {
       password,
       options: {
         data: { org_name: orgName || email.split("@")[0] + "'s Org" },
+        emailRedirectTo: `${window.location.origin}/callback`,
       },
     });
 
