@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/db/client";
+import { getDb } from "@/lib/db";
 import { calculateConfidence, type ConfidenceResult } from "./scorer";
 import { normalizeName } from "./normalize";
 import type { EntityType, SanctionsSource, ScreeningMatch } from "@/lib/sanctions/types";
@@ -10,23 +10,9 @@ interface ScreenOptions {
   lists?: SanctionsSource[];
 }
 
-interface DbEntry {
-  id: string;
-  external_id: string;
-  source: SanctionsSource;
-  entry_type: EntityType;
-  primary_name: string;
-  primary_name_normalized: string;
-  aliases: string[];
-  programs: string[];
-  addresses: unknown;
-  identification: unknown;
-  remarks: string | null;
-}
-
 /**
  * Two-phase screening engine:
- * Phase 1: PostgreSQL pg_trgm similarity search (fast, DB-level)
+ * Phase 1: Database search (pg_trgm in Postgres, LIKE in SQLite)
  * Phase 2: App-level confidence scoring with phonetic + Levenshtein refinement
  */
 export async function screenName(options: ScreenOptions): Promise<ScreeningMatch[]> {
@@ -38,31 +24,23 @@ export async function screenName(options: ScreenOptions): Promise<ScreeningMatch
   } = options;
 
   const normalized = normalizeName(name);
-  const supabase = createServiceClient();
+  const db = await getDb();
 
-  // Phase 1: pg_trgm similarity search — get top 50 candidates from DB
-  // Using a lower threshold (0.2) to cast a wide net, then refine in Phase 2
-  const { data: candidates, error } = await supabase.rpc("search_sanctions", {
-    query_name: normalized,
-    similarity_threshold: 0.2,
-    max_results: 50,
-    source_filter: lists,
-    entity_type_filter: entityType === "any" ? null : entityType,
+  // Phase 1: DB-level candidate search
+  const candidates = await db.searchSanctions({
+    queryName: normalized,
+    similarityThreshold: 0.2,
+    maxResults: 50,
+    sourceFilter: lists,
+    entityTypeFilter: entityType === "any" ? null : entityType,
   });
 
-  if (error) {
-    console.error("Sanctions search error:", error);
-    throw new Error(`Screening failed: ${error.message}`);
-  }
+  if (candidates.length === 0) return [];
 
-  if (!candidates || candidates.length === 0) {
-    return [];
-  }
-
-  // Phase 2: App-level confidence scoring with full algorithm
+  // Phase 2: App-level confidence scoring
   const matches: ScreeningMatch[] = [];
 
-  for (const entry of candidates as DbEntry[]) {
+  for (const entry of candidates) {
     const result = calculateConfidence(name, entry.primary_name, entry.aliases);
 
     if (result.confidence >= threshold) {
@@ -71,10 +49,10 @@ export async function screenName(options: ScreenOptions): Promise<ScreeningMatch
         band: result.band,
         requires_review: result.requires_review,
         component_scores: result.component_scores,
-        list: entry.source,
+        list: entry.source as SanctionsSource,
         entry: {
           sdn_id: entry.external_id || entry.id,
-          entry_type: entry.entry_type,
+          entry_type: entry.entry_type as EntityType,
           primary_name: entry.primary_name,
           aliases: entry.aliases,
           programs: entry.programs,
@@ -86,8 +64,6 @@ export async function screenName(options: ScreenOptions): Promise<ScreeningMatch
     }
   }
 
-  // Sort by confidence descending
   matches.sort((a, b) => b.confidence - a.confidence);
-
   return matches;
 }
