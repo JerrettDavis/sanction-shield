@@ -74,7 +74,7 @@ export default function WatchlistPage() {
           </div>
           <button
             type="submit"
-            disabled={loading || !newName.trim()}
+            disabled={!newName.trim()}
             className="px-6 py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
           >
             Add to Watchlist

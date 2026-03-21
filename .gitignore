@@ -7,3 +7,7 @@ out/
 *.tsbuildinfo
 next-env.d.ts
 data/
+e2e/results/
+e2e/screenshots/
+playwright-report/
+test-results/

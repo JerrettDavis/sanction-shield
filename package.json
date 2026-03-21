@@ -11,7 +11,9 @@
     "test": "vitest",
     "test:ci": "vitest run",
     "seed": "tsx scripts/seed-ofac.ts",
-    "acceptance": "tsx scripts/e2e-acceptance.ts"
+    "acceptance": "tsx scripts/e2e-acceptance.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@supabase/ssr": "0.9.0",
@@ -25,6 +27,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
     "@next/eslint-plugin-next": "^16.2.1",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "4.2.2",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.5.0",
