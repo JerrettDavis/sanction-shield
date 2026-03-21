@@ -1,16 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -20,7 +13,7 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [hashError, setHashError] = useState<string | null>(null);
   const router = useRouter();
-  const supabase = getSupabase();
+  const supabase = getSupabaseBrowser();
 
   useEffect(() => {
     // Check for error in URL hash (from Supabase redirect)
