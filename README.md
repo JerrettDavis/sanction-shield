@@ -15,15 +15,15 @@
 ## Architecture
 
 ```
-┌─────────────┐     ┌──────────────┐     ┌────────────────┐
-│  Dashboard   │────▶│  Next.js API  │────▶│  Matching Engine │
-│  (Next.js)   │     │  Routes       │     │  (fuzzy.ts)      │
-└─────────────┘     └──────┬───────┘     └───────┬────────┘
-                           │                      │
-                    ┌──────▼───────┐     ┌───────▼────────┐
-                    │  Auth Layer   │     │  Sanctions DB    │
-                    │  (API Keys)   │     │  (pg_trgm/SQLite)│
-                    └──────────────┘     └────────────────┘
+┌──────────────┐     ┌──────────────┐     ┌───────────────────┐
+│  Dashboard   │────▶│  Next.js API │────▶│  Matching Engine  │
+│  (Next.js)   │     │  Routes      │     │  (fuzzy.ts)       │
+└──────────────┘     └──────┬───────┘     └─────────┬─────────┘
+                            │                       │
+                     ┌──────▼───────┐     ┌─────────▼─────────┐
+                     │  Auth Layer  │     │  Sanctions DB      │
+                     │  (API Keys)  │     │  (pg_trgm/SQLite)  │
+                     └──────────────┘     └───────────────────┘
 ```
 
 **Two-phase matching:**
