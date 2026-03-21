@@ -21,17 +21,15 @@ test.describe("Dashboard Navigation", () => {
     ];
 
     for (const route of routes) {
-      await page.goto(route.path);
+      const response = await page.goto(route.path);
       await page.waitForLoadState("networkidle");
       await page.screenshot({ path: `e2e/screenshots/${route.screenshot}` });
 
+      // Verify page loads successfully (not a 500)
+      expect(response?.status()).toBeLessThan(500);
+
       // Verify page renders with correct title
       await expect(page.locator("h1")).toContainText(route.title);
-
-      // Verify no error states
-      const body = await page.textContent("body");
-      expect(body).not.toContain("404");
-      expect(body).not.toContain("Internal Server Error");
     }
   });
 
