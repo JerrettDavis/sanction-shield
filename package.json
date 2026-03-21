@@ -14,27 +14,27 @@
     "acceptance": "tsx scripts/e2e-acceptance.ts"
   },
   "dependencies": {
-    "@supabase/ssr": "0.6.1",
-    "@supabase/supabase-js": "2.49.4",
+    "@supabase/ssr": "0.9.0",
+    "@supabase/supabase-js": "2.99.3",
     "better-sqlite3": "^12.8.0",
     "next": "15.3.3",
-    "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
-    "@tailwindcss/postcss": "4.1.7",
+    "@tailwindcss/postcss": "4.2.2",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "22.15.21",
-    "@types/react": "19.1.4",
-    "@types/react-dom": "19.1.5",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "4.5.2",
     "eslint": "9.27.0",
     "eslint-config-next": "15.3.3",
-    "postcss": "8.5.4",
-    "tailwindcss": "4.1.7",
+    "postcss": "8.5.8",
+    "tailwindcss": "4.2.2",
     "tsx": "^4.21.0",
-    "typescript": "5.8.3",
+    "typescript": "5.9.3",
     "vitest": "3.2.1"
   },
   "engines": {
