@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/db/client";
+import { getDb } from "@/lib/db";
 import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -24,35 +24,17 @@ export async function validateApiKey(req: NextRequest): Promise<AuthResult | Nex
   const apiKey = authHeader.slice(7);
   const keyHash = createHash("sha256").update(apiKey).digest("hex");
 
-  const supabase = createServiceClient();
-  const { data, error } = await supabase
-    .from("api_keys")
-    .select("id, org_id, revoked_at")
-    .eq("key_hash", keyHash)
-    .maybeSingle();
+  const db = await getDb();
+  const result = await db.validateApiKey(keyHash);
 
-  if (error || !data) {
+  if (!result) {
     return NextResponse.json(
       { error: "invalid_api_key", message: "API key is invalid or revoked" },
       { status: 401 }
     );
   }
 
-  if (data.revoked_at) {
-    return NextResponse.json(
-      { error: "revoked_api_key", message: "This API key has been revoked" },
-      { status: 401 }
-    );
-  }
-
-  // Update last_used_at (fire and forget)
-  supabase
-    .from("api_keys")
-    .update({ last_used_at: new Date().toISOString() })
-    .eq("id", data.id)
-    .then();
-
-  return { orgId: data.org_id, apiKeyId: data.id };
+  return result;
 }
 
 /** Generate a new API key and return the raw key (shown once) + hash for storage */

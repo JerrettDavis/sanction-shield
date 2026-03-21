@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey } from "@/lib/auth/middleware";
 import { screenName } from "@/lib/matching/fuzzy";
-import { createServiceClient } from "@/lib/db/client";
+import { normalizeName } from "@/lib/matching/normalize";
+import { getDb } from "@/lib/db";
 import type { EntityType, SanctionsSource, ScreeningResponse } from "@/lib/sanctions/types";
 
 const VALID_ENTITY_TYPES = ["individual", "organization", "vessel", "aircraft", "any"] as const;
@@ -48,6 +49,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const thresholdSource = body.threshold !== undefined ? "user" : "system";
+
   const lists = Array.isArray(body.lists) ? body.lists : [...VALID_LISTS];
   for (const list of lists) {
     if (!VALID_LISTS.includes(list as typeof VALID_LISTS[number])) {
@@ -66,66 +69,94 @@ export async function POST(req: NextRequest) {
     lists: lists as SanctionsSource[],
   });
 
-  const supabase = createServiceClient();
+  const db = await getDb();
+  const normalizedInput = normalizeName(name);
 
-  // Log screening request
-  const { data: request } = await supabase
-    .from("screening_requests")
-    .insert({
-      org_id: auth.orgId,
-      request_type: "single",
-      input_name: name,
-      threshold,
-    })
-    .select("id")
-    .single();
+  // Log screening request with threshold governance
+  const requestId = await db.insertScreeningRequest({
+    orgId: auth.orgId,
+    requestType: "single",
+    inputName: name,
+    inputNameNormalized: normalizedInput,
+    threshold,
+    thresholdSource,
+  });
 
   // Log screening results
-  if (request && matches.length > 0) {
-    await supabase.from("screening_results").insert(
+  if (matches.length > 0) {
+    await db.insertScreeningResults(
       matches.map(m => ({
-        request_id: request.id,
-        entry_id: m.entry.sdn_id,
-        confidence_score: m.confidence,
-        match_details: { list: m.list, primary_name: m.entry.primary_name },
+        requestId,
+        entryId: m.entry.sdn_id,
+        confidenceScore: m.confidence,
+        matchDetails: {
+          list: m.list,
+          primary_name: m.entry.primary_name,
+          band: m.band,
+          component_scores: m.component_scores,
+        },
       }))
     );
   }
 
-  // Write audit log
-  await supabase.from("audit_log").insert({
-    org_id: auth.orgId,
-    event_type: "screening.single",
+  // Get list versions
+  const listVersions = await db.getListVersions();
+
+  // Compute top-level decision
+  const topMatch = matches[0];
+  const decision = matches.length === 0
+    ? "clear"
+    : topMatch.band === "HIGH"
+      ? "potential_match"
+      : "review";
+
+  const reasonCodes: string[] = [];
+  if (matches.some(m => m.requires_review)) reasonCodes.push("ambiguous_confidence");
+  if (matches.some(m => m.entry.entry_type !== entityType && entityType !== "any")) {
+    reasonCodes.push("entity_type_mismatch");
+  }
+
+  // Write audit log with full payload
+  await db.insertAuditLog({
+    orgId: auth.orgId,
+    eventType: "screening.single",
+    actorId: auth.apiKeyId,
     details: {
       input_name: name,
+      input_name_normalized: normalizedInput,
       entity_type: entityType,
       threshold,
+      threshold_source: thresholdSource,
+      decision,
+      reason_codes: reasonCodes,
       matches_found: matches.length,
-      request_id: request?.id,
+      top_matches: matches.slice(0, 5).map(m => ({
+        name: m.entry.primary_name,
+        confidence: m.confidence,
+        band: m.band,
+        list: m.list,
+      })),
+      list_versions: listVersions,
+      request_id: requestId,
+      api_key_id: auth.apiKeyId,
     },
   });
 
-  // Get list versions
-  const { data: listVersions } = await supabase
-    .from("sanctions_lists")
-    .select("source, version")
-    .order("downloaded_at", { ascending: false });
-
-  const versions: Record<string, string | null> = {
-    ofac_sdn: null,
-    eu_consolidated: null,
-    un_security_council: null,
-  };
-  for (const lv of listVersions || []) {
-    if (!versions[lv.source]) versions[lv.source] = lv.version;
-  }
-
-  const response: ScreeningResponse = {
+  const response: ScreeningResponse & {
+    decision: string;
+    decision_confidence: number | null;
+    reason_codes: string[];
+    api_version: string;
+  } = {
+    api_version: "2026-03-21",
     screened_at: new Date().toISOString(),
+    decision,
+    decision_confidence: topMatch?.confidence ?? null,
+    reason_codes: reasonCodes,
     input: { name, entity_type: entityType as EntityType | "any", threshold },
     matches,
-    list_versions: versions as Record<SanctionsSource, string | null>,
-    request_id: request?.id || "unknown",
+    list_versions: listVersions as Record<SanctionsSource, string | null>,
+    request_id: requestId,
   };
 
   return NextResponse.json(response);
