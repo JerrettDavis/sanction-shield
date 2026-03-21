@@ -41,8 +41,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           ))}
         </nav>
-        <div className="p-4 border-t border-gray-100">
-          <p className="text-xs text-gray-400">SanctionShield v0.1.0</p>
+        <div className="p-4 border-t border-gray-100 space-y-2">
+          <form action="/logout" method="POST">
+            <button
+              type="submit"
+              className="w-full text-left text-sm text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Sign out
+            </button>
+          </form>
+          <p className="text-xs text-gray-400 px-3">SanctionShield v0.1.0</p>
         </div>
       </aside>
 
