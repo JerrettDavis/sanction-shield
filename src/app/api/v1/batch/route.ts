@@ -1,13 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey } from "@/lib/auth/middleware";
+import { validateSession } from "@/lib/auth/session-auth";
 import { getDb } from "@/lib/db";
 import { parseCSV, processBatch } from "@/lib/services/batch";
 
 const MAX_ROWS = 5000;
 
 export async function POST(req: NextRequest) {
-  const auth = await validateApiKey(req);
-  if (auth instanceof NextResponse) return auth;
+  let orgId: string;
+
+  const authHeader = req.headers.get("authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    const apiAuth = await validateApiKey(req);
+    if (apiAuth instanceof NextResponse) return apiAuth;
+    orgId = apiAuth.orgId;
+  } else {
+    const sessionAuth = await validateSession(req);
+    if (sessionAuth instanceof NextResponse) return sessionAuth;
+    orgId = sessionAuth.orgId;
+  }
+
+  const auth = { orgId, apiKeyId: "session" };
 
   // Parse multipart form data
   const formData = await req.formData();

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey } from "@/lib/auth/middleware";
+import { validateSession } from "@/lib/auth/session-auth";
 import { screenName } from "@/lib/matching/fuzzy";
 import { normalizeName } from "@/lib/matching/normalize";
 import { getDb } from "@/lib/db";
@@ -9,9 +10,22 @@ const VALID_ENTITY_TYPES = ["individual", "organization", "vessel", "aircraft", 
 const VALID_LISTS = ["ofac_sdn", "eu_consolidated", "un_security_council"] as const;
 
 export async function POST(req: NextRequest) {
-  // Authenticate
-  const auth = await validateApiKey(req);
-  if (auth instanceof NextResponse) return auth;
+  // Authenticate — try API key first, fall back to session cookie
+  let orgId: string;
+  let actorId: string;
+
+  const authHeader = req.headers.get("authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    const apiAuth = await validateApiKey(req);
+    if (apiAuth instanceof NextResponse) return apiAuth;
+    orgId = apiAuth.orgId;
+    actorId = apiAuth.apiKeyId;
+  } else {
+    const sessionAuth = await validateSession(req);
+    if (sessionAuth instanceof NextResponse) return sessionAuth;
+    orgId = sessionAuth.orgId;
+    actorId = sessionAuth.userId;
+  }
 
   // Parse body
   let body: Record<string, unknown>;
@@ -74,7 +88,7 @@ export async function POST(req: NextRequest) {
 
   // Log screening request with threshold governance
   const requestId = await db.insertScreeningRequest({
-    orgId: auth.orgId,
+    orgId,
     requestType: "single",
     inputName: name,
     inputNameNormalized: normalizedInput,
@@ -118,9 +132,9 @@ export async function POST(req: NextRequest) {
 
   // Write audit log with full payload
   await db.insertAuditLog({
-    orgId: auth.orgId,
+    orgId,
     eventType: "screening.single",
-    actorId: auth.apiKeyId,
+    actorId,
     details: {
       input_name: name,
       input_name_normalized: normalizedInput,
@@ -138,7 +152,7 @@ export async function POST(req: NextRequest) {
       })),
       list_versions: listVersions,
       request_id: requestId,
-      api_key_id: auth.apiKeyId,
+      actor_id: actorId,
     },
   });
 
