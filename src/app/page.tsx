@@ -56,7 +56,8 @@ export default async function Home() {
         </h1>
         <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-10">
           Screen customers, vendors, and partners against global sanctions lists in milliseconds.
-          Avoid $330K+ penalties with automated compliance — starting at $79/month.
+          OFAC civil penalties can exceed $330K per violation.*
+          Automated screening starts at $79/month.
         </p>
         <div className="flex gap-4 justify-center">
           <Link href="/register" className="bg-emerald-600 text-white px-8 py-3 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors">
@@ -66,6 +67,7 @@ export default async function Home() {
             See How It Works
           </a>
         </div>
+        <p className="text-xs text-gray-400 mt-6">*Per OFAC Economic Sanctions Enforcement Guidelines, 31 C.F.R. Part 501, Appendix A</p>
       </section>
 
       {/* Trust strip */}
@@ -74,7 +76,7 @@ export default async function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
               <div className="text-2xl font-bold text-gray-900">18,700+</div>
-              <div className="text-xs text-gray-500 mt-1">OFAC SDN Entries</div>
+              <div className="text-xs text-gray-500 mt-1">OFAC SDN Entries (updated daily)</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-gray-900">&lt;500ms</div>
@@ -171,7 +173,8 @@ export default async function Home() {
       {/* Pricing */}
       <section className="max-w-5xl mx-auto px-6 py-20">
         <h2 className="text-3xl font-bold text-gray-900 text-center mb-4">Simple, transparent pricing</h2>
-        <p className="text-gray-500 text-center mb-12">No setup fees. No long-term contracts. Cancel anytime.</p>
+        <p className="text-gray-500 text-center mb-4">No setup fees. No long-term contracts. Cancel anytime.</p>
+        <p className="text-sm text-gray-400 text-center mb-12">Each tier increases screening volume, list coverage, and support level.</p>
         <div className="grid md:grid-cols-3 gap-8">
           <div className="p-8 rounded-xl border border-gray-200">
             <h3 className="font-semibold text-gray-900 mb-1">Starter</h3>
