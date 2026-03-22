@@ -29,7 +29,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <main className="min-h-screen bg-white">
       {/* Nav */}
       <nav className="border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -98,7 +98,7 @@ export default async function Home() {
       <section className="py-10">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <p className="text-sm text-gray-400 mb-4">Built for teams that move money across borders</p>
-          <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm font-medium text-gray-300">
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm font-medium text-gray-500">
             <span>Import/Export</span>
             <span>&middot;</span>
             <span>Customs Brokers</span>
@@ -266,6 +266,6 @@ export default async function Home() {
           </div>
         </div>
       </footer>
-    </div>
+    </main>
   );
 }
