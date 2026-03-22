@@ -1,5 +1,9 @@
 # SanctionShield Documentation
 
+## Status
+
+- [What's Live](WHATS_LIVE.md) — current production features, infrastructure, and planned upgrades
+
 ## User Guides
 
 Step-by-step guides based on tested BDD scenarios with screenshots.
@@ -8,6 +12,10 @@ Step-by-step guides based on tested BDD scenarios with screenshots.
 2. [Single Name Screening](guides/02-single-name-screening.md) — screen a name, understand results
 3. [Batch Screening](guides/03-batch-screening.md) — upload CSV, download results
 4. [Operational Checks](guides/04-operational-checks.md) — health, readiness, monitoring
+
+## Quality & Testing
+
+- [Matcher Quality Report](matcher-quality-report.md) — verified test cases, scoring algorithm, confidence bands, known limitations
 
 ## Operational Runbooks
 
