@@ -1,11 +1,14 @@
 import { getDb } from "@/lib/db";
 import { downloadAndParseOFAC } from "./ofac";
+import { downloadAndParseEU } from "./eu";
+import { downloadAndParseUN } from "./un";
 import { normalizeName } from "@/lib/matching/normalize";
 import { createHash } from "crypto";
 
 /**
  * Download, parse, and upsert sanctions list entries into the database.
  * Called by the daily cron job or on initial setup.
+ * Processes all three lists: OFAC SDN, EU Consolidated, UN Security Council.
  */
 export async function updateSanctionsLists(): Promise<{
   source: string;
@@ -16,12 +19,35 @@ export async function updateSanctionsLists(): Promise<{
 
   // OFAC SDN
   try {
+    console.log("[SanctionShield] Updating OFAC SDN...");
     const entries = await downloadAndParseOFAC();
     const result = await upsertEntries("ofac_sdn", entries);
     results.push({ source: "ofac_sdn", ...result });
   } catch (err) {
     console.error("Failed to update OFAC SDN:", err);
     results.push({ source: "ofac_sdn", entriesProcessed: 0, newEntries: 0 });
+  }
+
+  // EU Consolidated
+  try {
+    console.log("[SanctionShield] Updating EU Consolidated...");
+    const entries = await downloadAndParseEU();
+    const result = await upsertEntries("eu_consolidated", entries);
+    results.push({ source: "eu_consolidated", ...result });
+  } catch (err) {
+    console.error("Failed to update EU Consolidated:", err);
+    results.push({ source: "eu_consolidated", entriesProcessed: 0, newEntries: 0 });
+  }
+
+  // UN Security Council
+  try {
+    console.log("[SanctionShield] Updating UN Security Council...");
+    const entries = await downloadAndParseUN();
+    const result = await upsertEntries("un_security_council", entries);
+    results.push({ source: "un_security_council", ...result });
+  } catch (err) {
+    console.error("Failed to update UN Security Council:", err);
+    results.push({ source: "un_security_council", entriesProcessed: 0, newEntries: 0 });
   }
 
   return results;
