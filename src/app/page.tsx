@@ -94,6 +94,26 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Social proof */}
+      <section className="py-10">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <p className="text-sm text-gray-400 mb-4">Built for teams that move money across borders</p>
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm font-medium text-gray-300">
+            <span>Import/Export</span>
+            <span>&middot;</span>
+            <span>Customs Brokers</span>
+            <span>&middot;</span>
+            <span>Freight Forwarders</span>
+            <span>&middot;</span>
+            <span>Fintech</span>
+            <span>&middot;</span>
+            <span>Payments</span>
+            <span>&middot;</span>
+            <span>Law Firms</span>
+          </div>
+        </div>
+      </section>
+
       {/* Features */}
       <section className="max-w-5xl mx-auto px-6 py-20">
         <div className="text-center mb-16">
