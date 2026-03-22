@@ -95,6 +95,38 @@ function scorePair(query: string, candidate: string): PairScore {
   // Exact match
   if (query === candidate) return { total: 100, trigram: 40, levenshtein: 30, phonetic: 15, tokenOverlap: 15 };
 
+  // Tokenize both for word-level analysis
+  const qTokens = new Set(tokenizeName(query).filter(t => t.length >= 3));
+  const cTokens = new Set(tokenizeName(candidate).filter(t => t.length >= 3));
+  const intersection = [...qTokens].filter(t => cTokens.has(t)).length;
+  const union = new Set([...qTokens, ...cTokens]).size;
+
+  // Word containment check: if ALL query tokens appear in candidate (or vice versa)
+  // This handles "SBERBANK" matching "PUBLIC JOINT STOCK COMPANY SBERBANK OF RUSSIA"
+  const allQueryTokensInCandidate = qTokens.size > 0 && [...qTokens].every(t => cTokens.has(t));
+  const allCandidateTokensInQuery = cTokens.size > 0 && [...cTokens].every(t => qTokens.has(t));
+
+  if (allQueryTokensInCandidate || allCandidateTokensInQuery) {
+    // Strong containment match — the query is a subset of the entry (or vice versa)
+    // Score based on how much of the entry the query covers
+    const coverage = qTokens.size > 0 && cTokens.size > 0
+      ? Math.min(qTokens.size, cTokens.size) / Math.max(qTokens.size, cTokens.size)
+      : 0;
+
+    // Single-word query matching a multi-word entry: 85% base (HIGH threshold)
+    // Multi-word query covering more of entry: scales up toward 100%
+    const containmentScore = 85 + (coverage * 15);
+    return {
+      total: containmentScore,
+      trigram: 30,
+      levenshtein: 20,
+      phonetic: 15,
+      tokenOverlap: containmentScore - 65,
+    };
+  }
+
+  // Standard scoring for non-containment matches
+
   // Trigram similarity (weight: 40%)
   const trigram = trigramSimilarity(query, candidate) * 40;
 
@@ -108,12 +140,7 @@ function scorePair(query: string, candidate: string): PairScore {
   const cPhon = phoneticEncode(candidate);
   const phon = qPhon === cPhon ? 15 : (trigramSimilarity(qPhon, cPhon) * 15);
 
-  // Token overlap bonus (weight: 15%) — filter short tokens per Jarvis QA
-  const qTokens = new Set(tokenizeName(query).filter(t => t.length >= 3));
-  const cTokens = new Set(tokenizeName(candidate).filter(t => t.length >= 3));
-  const intersection = [...qTokens].filter(t => cTokens.has(t)).length;
-  const union = new Set([...qTokens, ...cTokens]).size;
-  // Exact token bonus: if any token matches exactly, add 5 points
+  // Token overlap bonus (weight: 15%)
   const exactTokenBonus = intersection > 0 ? 5 : 0;
   const tokenOvl = union > 0 ? (intersection / union) * 15 + exactTokenBonus : 0;
 
