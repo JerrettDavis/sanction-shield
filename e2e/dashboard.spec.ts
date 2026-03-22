@@ -33,6 +33,16 @@ test.describe("Dashboard Navigation", () => {
     }
   });
 
+  test("BDD: Root URL redirects to /screen", async ({ page }) => {
+    // Given the user navigates to the root URL
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    // Then they are redirected to /screen (or /login if not authenticated)
+    const url = page.url();
+    expect(url).toMatch(/\/(screen|login)/);
+  });
+
   test("BDD: Sidebar navigation links work", async ({ page }) => {
     await page.goto("/screen");
 
