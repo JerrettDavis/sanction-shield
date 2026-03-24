@@ -11,8 +11,8 @@ test.describe("Marketing Page (Signed Out)", () => {
     await expect(page.locator("h1")).toContainText("Sanctions screening");
 
     // And the nav has Sign In + Start Free CTAs
-    await expect(page.getByText("Sign in")).toBeVisible();
-    await expect(page.getByText("Start Free")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Sign in", exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Start Free", { exact: true }).first()).toBeVisible();
   });
 
   test("BDD: Marketing page has all key sections", async ({ page }) => {
@@ -20,7 +20,7 @@ test.describe("Marketing Page (Signed Out)", () => {
     await page.waitForLoadState("networkidle");
 
     // Trust strip
-    await expect(page.getByText("18,700+")).toBeVisible();
+    await expect(page.getByText("18,700+", { exact: true })).toBeVisible();
     await expect(page.getByText("<500ms")).toBeVisible();
 
     // Features section
@@ -29,12 +29,12 @@ test.describe("Marketing Page (Signed Out)", () => {
     await expect(page.getByText("Audit-Ready Reports")).toBeVisible();
 
     // How it works
-    await expect(page.getByText("How it works")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "How it works" })).toBeVisible();
 
     // Pricing
-    await expect(page.getByText("$79")).toBeVisible();
-    await expect(page.getByText("$149")).toBeVisible();
-    await expect(page.getByText("$299")).toBeVisible();
+    await expect(page.getByText("$79/mo", { exact: true })).toBeVisible();
+    await expect(page.getByText("$149/mo", { exact: true })).toBeVisible();
+    await expect(page.getByText("$299/mo", { exact: true })).toBeVisible();
 
     await page.screenshot({ path: "e2e/screenshots/marketing-02-full-page.png", fullPage: true });
   });
