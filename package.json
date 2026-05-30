@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@supabase/ssr": "0.10.3",
-    "@supabase/supabase-js": "2.106.1",
+    "@supabase/supabase-js": "2.106.2",
     "better-sqlite3": "^12.10.0",
     "next": "^16.2.6",
     "pg": "^8.21.0",
@@ -34,7 +34,7 @@
     "@types/pg": "^8.20.0",
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
-    "@typescript-eslint/eslint-plugin": "^8.59.4",
+    "@typescript-eslint/eslint-plugin": "^8.60.0",
     "@typescript-eslint/parser": "^8.59.1",
     "@vitejs/plugin-react": "^6.0.2",
     "eslint": "10.4.0",
