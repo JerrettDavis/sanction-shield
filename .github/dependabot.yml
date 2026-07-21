@@ -35,6 +35,13 @@ updates:
       prefix: "chore(deps)"
     cooldown:
       default-days: 2
+    # @typescript-eslint/eslint-plugin and @typescript-eslint/parser 8.x (latest
+    # stable and canary) cap their typescript peer range at "<6.1.0", so
+    # TypeScript is pinned to ^6.0.3 until those packages ship support for
+    # TS 6.1+/7.x. Remove this ignore once that lands upstream.
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     groups:
       npm-dependencies:
         patterns:
